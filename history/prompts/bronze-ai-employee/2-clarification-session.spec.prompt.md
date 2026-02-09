@@ -7,7 +7,7 @@ surface: agent
 model: claude-sonnet-4-5-20250929
 feature: bronze-ai-employee
 branch: 003-bronze-ai-employee
-user: ShumailaWaheed
+user: Shumaila Waheed
 command: sp.clarify
 labels: [clarification, ai-employee, bronze-tier, watcher, agent-skills]
 links:

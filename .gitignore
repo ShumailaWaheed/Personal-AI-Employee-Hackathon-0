@@ -58,6 +58,7 @@ env/
 .claude/cache/
 .claude/history/
 .claude/logs/
+.pytest_cache/
 
 # MCP servers
 .mcp/

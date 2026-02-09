@@ -1,3 +1,10 @@
+---
+status: in_progress
+processed_at: '2026-02-09T13:12:19.079172'
+linked_plan: Plans\PLAN_20260209_131219_task11_customer_retenion_strategy.md
+priority: high
+---
+
 # Customer Retention Strategy
 
 ## Task Description

@@ -1,18 +1,23 @@
 """
-Main Entry Point for Bronze-tier Personal AI Employee
+Main Entry Point for Gold Tier Personal AI Employee
+Backward-compatible with Bronze and Silver tiers.
+Gold tier adds: autonomous processing, priority/domain classification,
+auto-approval, retry queue, scheduled reports.
 """
 import sys
 import signal
 import logging
 from pathlib import Path
-import sys
-from pathlib import Path
+
 sys.path.append(str(Path(__file__).parent))
 
 from watchers.file_system_watcher import FileSystemWatcher
 from processors.vault_processor import VaultProcessor
+from processors.silver_processor import SilverProcessor
+from processors.gold_processor import GoldProcessor
 from utils.config_loader import load_config, validate_config
 from utils.logger import setup_logger
+from utils.dashboard_updater import DashboardUpdater
 
 
 def signal_handler(sig, frame):
@@ -23,14 +28,11 @@ def signal_handler(sig, frame):
 
 def main():
     """Main entry point for the AI Employee application"""
-    # Set up signal handler for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
-    # Load configuration
     config = load_config()
 
-    # Validate configuration
     is_valid, errors = validate_config(config)
     if not is_valid:
         print("Configuration validation errors:")
@@ -38,24 +40,45 @@ def main():
             print(f"  - {error}")
         sys.exit(1)
 
-    # Set up logging
     setup_logger(config['LOG_LEVEL'])
 
-    # Initialize components
-    watcher = FileSystemWatcher(config['VAULT_PATH'], config['CHECK_INTERVAL'])
-    processor = VaultProcessor(config['VAULT_PATH'])
+    # Initialize processor based on tier
+    gold_enabled = config.get('GOLD_TIER_ENABLED', False)
+    if gold_enabled:
+        processor = GoldProcessor(config['VAULT_PATH'], config)
+        tier_name = "Gold"
+    else:
+        processor = SilverProcessor(config['VAULT_PATH'], config)
+        tier_name = "Silver"
 
-    print("Bronze-tier Personal AI Employee starting...")
+    # Initialize filesystem watcher (Bronze tier baseline)
+    watcher = FileSystemWatcher(config['VAULT_PATH'], config['CHECK_INTERVAL'])
+
+    # Dashboard updater
+    dashboard = DashboardUpdater(config['VAULT_PATH'])
+
+    print(f"{tier_name} Tier Personal AI Employee starting...")
     print(f"Vault path: {config['VAULT_PATH']}")
     print(f"Check interval: {config['CHECK_INTERVAL']} seconds")
-    print(f"Log level: {config['LOG_LEVEL']}")
+    print(f"Processing interval: {config.get('PROCESSING_INTERVAL', 30)} seconds")
+    print(f"Dry run: {config['DRY_RUN']}")
+    if gold_enabled:
+        print(f"Auto-approve low-risk: {config.get('AUTO_APPROVE_LOW_RISK', False)}")
     print("Press Ctrl+C to stop")
 
-    # Update dashboard initially
-    processor.update_dashboard()
+    # Initial dashboard update
+    dashboard.update(dry_run=config['DRY_RUN'],
+                     processing_interval=config.get('PROCESSING_INTERVAL', 30))
 
     try:
-        # Start the file system watcher
+        # Process any pending items
+        processor.process_all()
+
+        # Update dashboard after initial processing
+        dashboard.update(dry_run=config['DRY_RUN'],
+                         processing_interval=config.get('PROCESSING_INTERVAL', 30))
+
+        # Start the filesystem watcher (main loop)
         watcher.run()
     except KeyboardInterrupt:
         print("\nShutting down AI Employee...")

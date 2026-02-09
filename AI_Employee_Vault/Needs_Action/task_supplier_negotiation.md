@@ -1,3 +1,10 @@
+---
+status: in_progress
+processed_at: '2026-02-09T13:12:19.266036'
+linked_plan: Plans\PLAN_20260209_131219_task_supplier_negotiation.md
+priority: high
+---
+
 # Supplier Contract Negotiation
 
 ## Task Description

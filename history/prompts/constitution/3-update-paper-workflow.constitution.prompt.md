@@ -7,7 +7,7 @@ surface: agent
 model: Claude Sonnet 4.5
 feature: none
 branch: main
-user: user
+user: Shumaila Waheed
 command: /sp.constitution
 labels: [constitution,ai-employee,paper-workflow,specify-workflow]
 links:

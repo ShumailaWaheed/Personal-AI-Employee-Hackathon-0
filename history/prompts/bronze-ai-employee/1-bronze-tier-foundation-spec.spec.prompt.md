@@ -7,7 +7,7 @@ surface: agent
 model: claude-sonnet-4-5-20250929
 feature: bronze-ai-employee
 branch: main
-user: ShumailaWaheed
+user: Shumaila Waheed
 command: sp.specify
 labels: [specification, ai-employee, bronze-tier, obsidian-vault, watcher]
 links:

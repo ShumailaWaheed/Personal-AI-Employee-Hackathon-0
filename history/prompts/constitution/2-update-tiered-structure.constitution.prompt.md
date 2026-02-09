@@ -7,7 +7,7 @@ surface: agent
 model: Claude Sonnet 4.5
 feature: none
 branch: main
-user: user
+user: Shumaila Waheed
 command: /sp.constitution
 labels: [constitution,ai-employee,tiered-structure,local-first,human-in-the-loop]
 links:
@@ -22,8 +22,6 @@ tests:
 ---
 
 ## Prompt
-
-/sp.constitution
 
 Build a comprehensive, tiered project constitution for the "Personal AI Employee" hackathon project (from Panaversity document): an autonomous Digital FTE that proactively manages personal (Gmail, WhatsApp, bank) and business affairs (social media, payments, projects, accounting via Odoo) 24/7. Use Claude Code as reasoning engine (with Ralph Wiggum Stop hook/loop for iterative multi-step task completion), Obsidian as local-first dashboard/memory (single source of truth via Markdown), lightweight Python Watchers for perception (senses: monitor inputs and create .md in /Needs_Action), and Node.js MCP servers for actions (hands: external like email send, browser clicks, Odoo JSON-RPC). System is local-first, privacy-focused, agent-driven, human-in-the-loop for sensitive actions.
 
