@@ -56,7 +56,7 @@ class OdooMCPServer:
             'create_expense': self.create_expense,
             'create_invoice': self.create_invoice,
             'get_financial_summary': self.get_financial_summary,
-            'ping': lambda p: self._make_response(request_id, {"status": "ok", "server": "odoo"}),
+            'ping': lambda rid, p: self._make_response(rid, {"status": "ok", "server": "odoo"}),
         }
 
         handler = handlers.get(method)
@@ -64,7 +64,7 @@ class OdooMCPServer:
             return self._make_error(request_id, -32601, "Method not found")
 
         try:
-            return handler(params)
+            return handler(request_id, params)
         except ConnectionError as e:
             return self._make_error(request_id, -32001, str(e))
         except ValueError as e:
@@ -72,8 +72,7 @@ class OdooMCPServer:
         except Exception as e:
             return self._make_error(request_id, -32000, f"Operation failed: {e}")
 
-    def create_expense(self, params: dict) -> dict:
-        request_id = params.get('id')
+    def create_expense(self, request_id, params: dict) -> dict:
         description = params.get('description', '')
         amount = params.get('amount', 0)
         currency = params.get('currency', 'USD')
@@ -120,8 +119,7 @@ class OdooMCPServer:
             "currency": currency,
         })
 
-    def create_invoice(self, params: dict) -> dict:
-        request_id = params.get('id')
+    def create_invoice(self, request_id, params: dict) -> dict:
         partner_name = params.get('partner_name', '')
         lines = params.get('lines', [])
         due_date = params.get('due_date', '')
@@ -163,8 +161,7 @@ class OdooMCPServer:
             "invoice_id": str(invoice_id),
         })
 
-    def get_financial_summary(self, params: dict) -> dict:
-        request_id = params.get('id')
+    def get_financial_summary(self, request_id, params: dict) -> dict:
         period = params.get('period', 'month')
         date = params.get('date', datetime.now().strftime('%Y-%m-%d'))
 

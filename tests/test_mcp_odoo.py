@@ -40,7 +40,7 @@ class TestCreateExpense:
             mock_common = MagicMock()
             mock_common.authenticate.return_value = 1
             mock_models = MagicMock()
-            mock_models.execute_kw.return_value = 42
+            mock_models.execute_kw.side_effect = [[1], 42]  # employee search, then create
             mock_proxy.side_effect = [mock_common, mock_models]
 
             resp = server.handle_request({
