@@ -6,7 +6,7 @@ date: 2026-02-06
 surface: claude-code
 model: claude-opus-4-6
 feature: 002-silver-tier
-branch: 002-silver-ai-employee
+branch: main
 user: Shumaila Waheed
 command: /sp.implement
 labels: [silver-tier, implementation, hitl, mcp, watchers, audit-logging, social-media]

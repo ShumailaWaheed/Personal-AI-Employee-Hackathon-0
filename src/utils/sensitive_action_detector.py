@@ -23,6 +23,14 @@ def detect_action_type(content: str) -> str:
     if 'linkedin' in content_lower:
         return 'linkedin_post'
 
+    # Twitter/X actions
+    if any(k in content_lower for k in ['twitter', 'tweet', 'post on twitter', 'post on x']):
+        return 'twitter_post'
+
+    # Instagram actions
+    if any(k in content_lower for k in ['instagram', 'insta', 'post on instagram', 'ig post']):
+        return 'instagram_post'
+
     # Facebook actions
     if any(k in content_lower for k in ['facebook', 'fb post', 'post on facebook']):
         return 'facebook_post'
@@ -55,7 +63,8 @@ def assess_risk(content: str) -> str:
     if any(k in content_lower for k in high_risk):
         return 'high'
 
-    medium_risk = ['email', 'send', 'post', 'publish', 'share', 'linkedin', 'facebook', 'whatsapp']
+    medium_risk = ['email', 'send', 'post', 'publish', 'share', 'linkedin', 'facebook', 'whatsapp',
+                   'twitter', 'tweet', 'instagram', 'insta']
     if any(k in content_lower for k in medium_risk):
         return 'medium'
 

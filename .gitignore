@@ -62,3 +62,14 @@ env/
 
 # MCP servers
 .mcp/
+
+twitter_session/
+whatsapp_session/
+
+# Secrets & credentials
+.env.runtime
+credentials.json
+gmail_token.json
+*.pem
+*.key
+

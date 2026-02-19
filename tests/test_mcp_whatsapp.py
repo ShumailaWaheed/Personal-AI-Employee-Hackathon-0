@@ -69,12 +69,53 @@ class TestSendMessage:
         from whatsapp_server import WhatsAppMCPServer
         server = WhatsAppMCPServer()
 
+        # Mock the browser automation chain
+        mock_element = MagicMock()
+        mock_page = MagicMock()
+        mock_page.wait_for_selector.return_value = mock_element
+
+        server._page = mock_page  # skip _ensure_browser
+
         resp = server.handle_request({
             "method": "send_message", "id": "1",
             "params": {"to": "+1234567890", "message": "PW test"}
         })
         assert resp["result"]["success"] is True
         assert resp["result"]["mode"] == "playwright"
+        assert resp["result"]["to"] == "+1234567890"
+
+    def test_playwright_contact_not_found(self, monkeypatch):
+        monkeypatch.setenv('WHATSAPP_MODE', 'playwright')
+        from whatsapp_server import WhatsAppMCPServer
+        server = WhatsAppMCPServer()
+
+        mock_search = MagicMock()
+        mock_page = MagicMock()
+        # First call returns search box, second raises (contact not found)
+        mock_page.wait_for_selector.side_effect = [mock_search, Exception("Timeout")]
+
+        server._page = mock_page
+
+        resp = server.handle_request({
+            "method": "send_message", "id": "1",
+            "params": {"to": "Unknown Person", "message": "test"}
+        })
+        assert "error" in resp
+
+    def test_playwright_session_expired(self, monkeypatch):
+        monkeypatch.setenv('WHATSAPP_MODE', 'playwright')
+        from whatsapp_server import WhatsAppMCPServer
+        server = WhatsAppMCPServer()
+
+        # _page is None so _ensure_browser runs — mock playwright to fail
+        with patch('whatsapp_server.WhatsAppMCPServer._ensure_browser',
+                   side_effect=ConnectionError("session expired")):
+            resp = server.handle_request({
+                "method": "send_message", "id": "1",
+                "params": {"to": "+1234567890", "message": "test"}
+            })
+            assert "error" in resp
+            assert resp["error"]["code"] == -32031
 
 
 class TestGetMessageStatus:

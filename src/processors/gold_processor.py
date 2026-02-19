@@ -97,6 +97,38 @@ class GoldProcessor(SilverProcessor):
             except Exception as e:
                 logger.error(f"Error processing {action_file.name}: {e}")
 
+    def _extract_draft_reply(self, content: str) -> str:
+        """Extract draft reply text from action file content"""
+        lines = content.split('\n')
+        in_section = False
+        reply_lines = []
+        for line in lines:
+            if line.strip().startswith('## Draft Reply'):
+                in_section = True
+                continue
+            if in_section:
+                if line.strip().startswith('## '):
+                    break
+                reply_lines.append(line)
+        return '\n'.join(reply_lines).strip()
+
+    def _extract_message_content(self, content: str) -> str:
+        """Extract the original message content from action file"""
+        lines = content.split('\n')
+        in_section = False
+        msg_lines = []
+        for line in lines:
+            if line.strip().startswith('## Message Content'):
+                in_section = True
+                continue
+            if in_section:
+                if line.strip().startswith('## '):
+                    break
+                # Strip blockquote marker
+                text = line.lstrip('> ').strip() if line.startswith('>') else line
+                msg_lines.append(text)
+        return '\n'.join(msg_lines).strip()
+
     def _process_single_action(self, action_file: Path, content: str, frontmatter: dict,
                                 priority: str, domain: str):
         """Process a single action item with Gold-tier logic"""
@@ -104,11 +136,19 @@ class GoldProcessor(SilverProcessor):
             action_type = detect_action_type(content)
             risk_level = assess_risk(content)
 
+            # Extract draft reply for whatsapp keyword-triggered messages
+            draft_reply = ""
+            if action_type == 'whatsapp_message':
+                draft_reply = self._extract_draft_reply(content)
+
             # Auto-approval check
             if self._can_auto_approve(risk_level, domain):
                 self._auto_approve_action(action_file, content, action_type, risk_level, domain)
             else:
-                self._route_to_approval_gold(action_file, content, action_type, risk_level, domain)
+                self._route_to_approval_gold(
+                    action_file, content, action_type, risk_level, domain,
+                    draft_reply=draft_reply,
+                )
         else:
             # Non-sensitive: process directly (Bronze behavior)
             self.process_action_item(action_file)
@@ -160,7 +200,8 @@ class GoldProcessor(SilverProcessor):
         shutil.move(str(action_file), str(dest))
 
     def _route_to_approval_gold(self, action_file: Path, content: str,
-                                 action_type: str, risk_level: str, domain: str):
+                                 action_type: str, risk_level: str, domain: str,
+                                 draft_reply: str = ""):
         """Route to HITL approval with Gold-tier metadata"""
         plan_path = self._create_plan(action_file, content)
 
@@ -175,7 +216,9 @@ class GoldProcessor(SilverProcessor):
         )
 
         plan_summary = plan_path.read_text(encoding='utf-8')[:500]
-        approval_path = self.approval_formatter.create_approval_file(request, plan_summary)
+        approval_path = self.approval_formatter.create_approval_file(
+            request, plan_summary, draft_reply=draft_reply,
+        )
         logger.info(f"Created approval request: {approval_path.name} "
                      f"(risk: {risk_level}, domain: {domain})")
 
@@ -301,10 +344,36 @@ class GoldProcessor(SilverProcessor):
                 logger.error(f"Facebook post failed: {result}")
             return success
 
+        if action_type == 'twitter_post':
+            text = self._extract_post_text(content)
+            result = self.mcp_client.create_tweet({'text': text})
+            success = isinstance(result, dict) and result.get('success', False)
+            if success:
+                logger.info(f"Tweet published: {result.get('tweet_id', 'unknown')}")
+            else:
+                logger.error(f"Tweet failed: {result}")
+            return success
+
+        if action_type == 'instagram_post':
+            text = self._extract_post_text(content)
+            result = self.mcp_client.create_instagram_post({
+                'caption': text,
+                'image_url': self._extract_image_url(content),
+            })
+            success = isinstance(result, dict) and result.get('success', False)
+            if success:
+                logger.info(f"Instagram post published: {result.get('post_id', 'unknown')}")
+            else:
+                logger.error(f"Instagram post failed: {result}")
+            return success
+
         if action_type == 'whatsapp_message':
+            # Prefer draft reply from approval file; fall back to generic extraction
+            draft = self._extract_draft_reply(content)
+            message = draft if draft else self._extract_post_text(content)
             result = self.mcp_client.send_whatsapp({
                 'to': self._extract_target(content),
-                'message': self._extract_post_text(content),
+                'message': message,
             })
             return isinstance(result, dict) and result.get('success', False)
 
@@ -365,6 +434,19 @@ class GoldProcessor(SilverProcessor):
                 body_lines.append(line)
         return '\n'.join(body_lines).strip()
 
+    def _extract_image_url(self, content: str) -> str:
+        """Extract image URL from action content for Instagram posts"""
+        for line in content.split('\n'):
+            line_stripped = line.strip()
+            if line_stripped.startswith('image_url:'):
+                return line_stripped.split(':', 1)[1].strip()
+            if line_stripped.startswith('!['):
+                # Markdown image: ![alt](url)
+                start = line_stripped.index('(') + 1
+                end = line_stripped.index(')')
+                return line_stripped[start:end]
+        return ''
+
     def _determine_mcp_server(self, action_type: str) -> str:
         """Determine MCP server — extends Silver mapping with Gold servers"""
         mapping = {
@@ -372,6 +454,7 @@ class GoldProcessor(SilverProcessor):
             'linkedin_post': 'linkedin_mcp',
             'whatsapp_message': 'whatsapp_mcp',
             'twitter_post': 'twitter_mcp',
+            'instagram_post': 'instagram_mcp',
             'financial_action': 'odoo_mcp',
         }
         return mapping.get(action_type, 'email_mcp')

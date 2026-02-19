@@ -94,12 +94,22 @@ class OdooMCPServer:
 
         uid = self._authenticate()
         models = self._get_models()
+
+        # Get first employee (required field)
+        employee_ids = models.execute_kw(
+            self.odoo_db, uid, self.odoo_api_key,
+            'hr.employee', 'search', [[]], {'limit': 1}
+        )
+        if not employee_ids:
+            raise ValueError("No employee found in Odoo — create one first")
+
         expense_id = models.execute_kw(
             self.odoo_db, uid, self.odoo_api_key,
             'hr.expense', 'create', [{
                 'name': description,
                 'total_amount': amount,
                 'date': date,
+                'employee_id': employee_ids[0],
                 'description': notes,
             }]
         )

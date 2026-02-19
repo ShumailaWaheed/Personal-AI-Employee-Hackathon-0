@@ -6,7 +6,7 @@ date: 2026-02-08
 surface: claude-code
 model: claude-opus-4-6
 feature: gold-tier
-branch: 004-gold-tier
+branch: main
 user: Shumaila Waheed
 command: /sp.clarify
 labels: [spec, clarify, gold-tier, ambiguity-resolution]

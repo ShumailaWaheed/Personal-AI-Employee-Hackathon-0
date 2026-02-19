@@ -28,7 +28,8 @@ class ApprovalFormatter:
             return False
         return True
 
-    def create_approval_file(self, request: ApprovalRequest, plan_summary: str = "") -> Path:
+    def create_approval_file(self, request: ApprovalRequest, plan_summary: str = "",
+                              draft_reply: str = "") -> Path:
         """Create an approval request markdown file in /Pending_Approval"""
         filepath = self.pending_approval / request.filename
 
@@ -48,6 +49,9 @@ class ApprovalFormatter:
 
         if plan_summary:
             content += f"\n## Plan Summary\n{plan_summary}\n"
+
+        if draft_reply:
+            content += f"\n## Draft Reply\n{draft_reply}\n"
 
         content += f"""
 ## Risk Assessment

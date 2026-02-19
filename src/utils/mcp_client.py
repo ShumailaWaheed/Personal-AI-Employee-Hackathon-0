@@ -26,6 +26,10 @@ class MCPClient:
         'linkedin_mcp': 'linkedin_server.py',
         'whatsapp': 'whatsapp_server.py',
         'whatsapp_mcp': 'whatsapp_server.py',
+        'twitter': 'twitter_server.py',
+        'twitter_mcp': 'twitter_server.py',
+        'instagram': 'instagram_server.py',
+        'instagram_mcp': 'instagram_server.py',
     }
 
     def __init__(self, server_script: str | None = None):
@@ -47,6 +51,11 @@ class MCPClient:
 
     def _call_server(self, server_name: str, method: str, params: dict | None = None) -> dict:
         """Make a JSON-RPC call to a specific MCP server by name"""
+        from config.deployment import get_enabled_mcp_servers
+        base_name = server_name.replace('_mcp', '')
+        if base_name not in get_enabled_mcp_servers():
+            logger.warning(f"MCP server '{server_name}' not available in {os.getenv('DEPLOYMENT_MODE', 'local')} mode")
+            return {"error": {"code": -32000, "message": f"Server '{server_name}' not available in cloud mode. Playwright-based servers run locally only."}}
         script = self._get_server_script(server_name)
         return self._call(method, params, server_script=script)
 
@@ -63,8 +72,9 @@ class MCPClient:
         script = server_script or self.server_script
 
         try:
+            python_cmd = 'python3' if os.name != 'nt' else 'python'
             proc = subprocess.run(
-                ['python', script],
+                [python_cmd, script],
                 input=request_json,
                 capture_output=True,
                 text=True,
@@ -159,6 +169,32 @@ class MCPClient:
     def get_linkedin_metrics(self, params: dict) -> dict:
         """Get LinkedIn post metrics via LinkedIn MCP"""
         response = self._call_server('linkedin', 'get_post_metrics', params)
+        return response.get('result', response)
+
+    # Twitter MCP methods
+    def create_tweet(self, params: dict) -> dict:
+        """Post a tweet via Twitter MCP"""
+        response = self._call_server('twitter', 'create_tweet', params)
+        if 'error' in response:
+            logger.error(f"Twitter create_tweet failed: {response['error']}")
+        return response.get('result', response)
+
+    def get_tweet_metrics(self, params: dict) -> dict:
+        """Get tweet metrics via Twitter MCP"""
+        response = self._call_server('twitter', 'get_tweet_metrics', params)
+        return response.get('result', response)
+
+    # Instagram MCP methods
+    def create_instagram_post(self, params: dict) -> dict:
+        """Post to Instagram via Instagram MCP"""
+        response = self._call_server('instagram', 'create_post', params)
+        if 'error' in response:
+            logger.error(f"Instagram create_post failed: {response['error']}")
+        return response.get('result', response)
+
+    def get_instagram_post_metrics(self, params: dict) -> dict:
+        """Get Instagram post metrics via Instagram MCP"""
+        response = self._call_server('instagram', 'get_post_metrics', params)
         return response.get('result', response)
 
     # WhatsApp MCP methods

@@ -1,0 +1,9 @@
+# All cloud requirements
+-r requirements.txt
+
+# Playwright browser automation (WhatsApp, Twitter, Instagram)
+playwright>=1.42.0
+playwright-stealth>=1.0.6
+
+# Image generation (Instagram default post images)
+Pillow>=10.2.0

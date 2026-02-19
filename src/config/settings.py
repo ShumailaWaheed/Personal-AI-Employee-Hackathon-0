@@ -13,6 +13,9 @@ def load_config() -> dict:
     if env_path.exists():
         load_dotenv(env_path)
 
+    deployment_mode = os.getenv('DEPLOYMENT_MODE', 'local')
+    is_cloud = deployment_mode == 'cloud'
+
     return {
         # Vault
         'VAULT_PATH': os.getenv('VAULT_PATH', './AI_Employee_Vault'),
@@ -20,6 +23,9 @@ def load_config() -> dict:
         'LOG_LEVEL': os.getenv('LOG_LEVEL', 'INFO'),
         'DRY_RUN': os.getenv('DRY_RUN', 'false').lower() == 'true',
         'PROCESSING_INTERVAL': int(os.getenv('PROCESSING_INTERVAL', '30')),
+
+        # Platinum Tier - Deployment
+        'DEPLOYMENT_MODE': deployment_mode,
 
         # Email MCP
         'EMAIL_SMTP_HOST': os.getenv('EMAIL_SMTP_HOST', 'smtp.gmail.com'),
@@ -54,10 +60,29 @@ def load_config() -> dict:
         'TWITTER_BEARER_TOKEN': os.getenv('TWITTER_BEARER_TOKEN', ''),
         'TWITTER_API_KEY': os.getenv('TWITTER_API_KEY', ''),
         'TWITTER_API_SECRET': os.getenv('TWITTER_API_SECRET', ''),
+        'TWITTER_ACCESS_TOKEN': os.getenv('TWITTER_ACCESS_TOKEN', ''),
+        'TWITTER_ACCESS_TOKEN_SECRET': os.getenv('TWITTER_ACCESS_TOKEN_SECRET', ''),
 
-        # WhatsApp MCP
-        'WHATSAPP_MODE': os.getenv('WHATSAPP_MODE', 'playwright'),
+        # Instagram MCP (uses Facebook Graph API)
+        'INSTAGRAM_ACCESS_TOKEN': os.getenv('INSTAGRAM_ACCESS_TOKEN', ''),
+        'INSTAGRAM_BUSINESS_ACCOUNT_ID': os.getenv('INSTAGRAM_BUSINESS_ACCOUNT_ID', ''),
+
+        # Gmail Watcher (OAuth2)
+        'GOOGLE_APPLICATION_CREDENTIALS': os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'credentials.json'),
+        'GMAIL_TOKEN_FILE': os.getenv('GMAIL_TOKEN_FILE', 'gmail_token.json'),
+
+        # WhatsApp MCP (cloud forces 'api' mode - no Playwright available)
+        'WHATSAPP_MODE': os.getenv('WHATSAPP_MODE', 'api' if is_cloud else 'playwright'),
         'WHATSAPP_API_TOKEN': os.getenv('WHATSAPP_API_TOKEN', ''),
+
+        # Platinum Tier - Health Check
+        'HEALTH_PORT': int(os.getenv('HEALTH_PORT', '8080')),
+
+        # WhatsApp keyword trigger for auto-reply flow
+        'WHATSAPP_TRIGGER_KEYWORDS': [
+            kw.strip() for kw in
+            os.getenv('WHATSAPP_TRIGGER_KEYWORDS', 'urgent,bhai').split(',')
+        ],
     }
 
 
@@ -86,5 +111,5 @@ SENSITIVE_KEYWORDS = [
     'transaction', 'buy', 'purchase', 'transfer', 'linkedin',
     # Gold tier additions
     'expense', 'invoice', 'accounting', 'bookkeeping', 'financial',
-    'tweet', 'twitter', 'whatsapp',
+    'tweet', 'twitter', 'whatsapp', 'instagram', 'insta',
 ]

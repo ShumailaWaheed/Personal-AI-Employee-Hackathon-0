@@ -9,9 +9,12 @@ import sys
 import json
 import os
 import time
+import logging
 from datetime import datetime
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 
 class WhatsAppMCPServer:
@@ -20,6 +23,11 @@ class WhatsAppMCPServer:
         self.api_token = os.getenv('WHATSAPP_API_TOKEN', '')
         self.dry_run = os.getenv('DRY_RUN', 'false').lower() == 'true'
         self.api_base = 'https://graph.facebook.com/v17.0'
+        self.session_dir = os.getenv('WHATSAPP_SESSION_DIR', './whatsapp_session')
+        self.headless = os.getenv('WHATSAPP_HEADLESS', 'false').lower() == 'true'
+        self._playwright = None
+        self._browser = None
+        self._page = None
 
     def _make_response(self, request_id, result: dict) -> dict:
         return {"jsonrpc": "2.0", "id": request_id, "result": result}
@@ -107,15 +115,93 @@ class WhatsAppMCPServer:
             "to": to,
         })
 
+    def _ensure_browser(self):
+        """Launch Playwright browser with persistent WhatsApp Web session."""
+        if self._page is not None:
+            return
+
+        try:
+            from playwright.sync_api import sync_playwright
+        except ImportError:
+            raise ConnectionError("Playwright not installed. Run: pip install playwright && playwright install")
+
+        self._playwright = sync_playwright().start()
+        self._browser = self._playwright.chromium.launch_persistent_context(
+            user_data_dir=self.session_dir,
+            headless=self.headless,
+            viewport={'width': 1280, 'height': 800},
+        )
+        self._page = self._browser.new_page()
+        self._page.goto("https://web.whatsapp.com/")
+        logger.info("Waiting for WhatsApp Web login (scan QR if needed)...")
+        try:
+            self._page.wait_for_selector('[data-testid="chat-list"]', timeout=120000)
+        except Exception:
+            self._cleanup_browser()
+            raise ConnectionError("WhatsApp Web session expired — scan QR code to re-authenticate")
+        logger.info("WhatsApp Web session ready")
+
+    def _cleanup_browser(self):
+        """Release Playwright resources."""
+        try:
+            if self._browser:
+                self._browser.close()
+            if self._playwright:
+                self._playwright.stop()
+        except Exception:
+            pass
+        self._playwright = None
+        self._browser = None
+        self._page = None
+
     def _send_via_playwright(self, request_id, to, message, media_url):
-        # Playwright mode: browser automation for WhatsApp Web
-        # This is a stub — actual Playwright automation would go here
+        """Send a WhatsApp message via browser automation on WhatsApp Web."""
+        self._ensure_browser()
+        page = self._page
+
+        # Open chat search and type contact name / number
+        search_box = page.wait_for_selector(
+            '[data-testid="chat-list-search"],'
+            'div[contenteditable="true"][data-tab="3"]',
+            timeout=15000,
+        )
+        search_box.click()
+        search_box.fill('')
+        search_box.type(to, delay=50)
+
+        # Wait for results and click the matching chat
+        try:
+            chat_match = page.wait_for_selector(
+                f'span[title*="{to}"]',
+                timeout=10000,
+            )
+            chat_match.click()
+        except Exception:
+            raise ConnectionError(f"Contact '{to}' not found in WhatsApp")
+
+        # Type and send the message
+        msg_box = page.wait_for_selector(
+            '[data-testid="conversation-compose-box-input"],'
+            'div[contenteditable="true"][data-tab="10"]',
+            timeout=10000,
+        )
+        msg_box.click()
+        msg_box.type(message, delay=20)
+
+        # Press Enter to send
+        msg_box.press('Enter')
+
+        # Brief wait to let the message dispatch
+        page.wait_for_timeout(1500)
+
+        msg_id = f"pw_{int(time.time())}"
+        logger.info(f"Sent WhatsApp message to {to} via Playwright (id={msg_id})")
+
         return self._make_response(request_id, {
             "success": True,
-            "message_id": f"pw_{int(time.time())}",
+            "message_id": msg_id,
             "to": to,
             "mode": "playwright",
-            "note": "Sent via browser automation",
         })
 
     def get_message_status(self, params: dict) -> dict:
