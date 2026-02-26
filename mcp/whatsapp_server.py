@@ -129,13 +129,20 @@ class WhatsAppMCPServer:
         self._browser = self._playwright.chromium.launch_persistent_context(
             user_data_dir=self.session_dir,
             headless=self.headless,
+            channel='msedge',
             viewport={'width': 1280, 'height': 800},
+            args=['--disable-blink-features=AutomationControlled'],
+            ignore_default_args=['--enable-automation'],
         )
         self._page = self._browser.new_page()
-        self._page.goto("https://web.whatsapp.com/")
+        self._page.goto("https://web.whatsapp.com/", wait_until="domcontentloaded")
         logger.info("Waiting for WhatsApp Web login (scan QR if needed)...")
         try:
-            self._page.wait_for_selector('[data-testid="chat-list"]', timeout=120000)
+            self._page.wait_for_selector(
+                '[data-testid="chat-list"], [aria-label="Search input textbox"], '
+                '[data-testid="chatlist-header"], div[data-tab="3"]',
+                timeout=120000,
+            )
         except Exception:
             self._cleanup_browser()
             raise ConnectionError("WhatsApp Web session expired — scan QR code to re-authenticate")
@@ -160,14 +167,17 @@ class WhatsAppMCPServer:
         page = self._page
 
         # Open chat search and type contact name / number
+        # Click search area
         search_box = page.wait_for_selector(
-            '[data-testid="chat-list-search"],'
-            'div[contenteditable="true"][data-tab="3"]',
+            '[data-testid="chat-list-search"], '
+            'div[contenteditable="true"][data-tab="3"], '
+            '[aria-label="Search input textbox"], '
+            'div[title="Search input textbox"]',
             timeout=15000,
         )
         search_box.click()
-        search_box.fill('')
-        search_box.type(to, delay=50)
+        page.wait_for_timeout(500)
+        page.keyboard.type(to, delay=50)
 
         # Wait for results and click the matching chat
         try:
@@ -191,8 +201,8 @@ class WhatsAppMCPServer:
         # Press Enter to send
         msg_box.press('Enter')
 
-        # Brief wait to let the message dispatch
-        page.wait_for_timeout(1500)
+        # Wait for message to be sent (double tick or single tick)
+        page.wait_for_timeout(8000)
 
         msg_id = f"pw_{int(time.time())}"
         logger.info(f"Sent WhatsApp message to {to} via Playwright (id={msg_id})")

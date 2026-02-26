@@ -55,6 +55,12 @@ A **Personal AI Employee** is an autonomous system that:
 - LinkedIn watcher (REST API)
 - WhatsApp watcher (Playwright, keyword-triggered)
 
+### Streamlit Web Dashboard
+- Password-protected web UI for monitoring and management
+- Real-time vault stats, task lists, and analytics
+- Dark-themed with Plotly charts and interactive navigation
+- Run with: `cd src && streamlit run streamlit_app.py`
+
 ### Platinum Tier (Cloud + Local Hybrid)
 - 24/7 cloud deployment on GCP e2-micro (free tier)
 - Cloud/Local separation — lightweight processes on cloud, browser automation stays local
@@ -120,14 +126,15 @@ AI_Employee_Vault/
 
 - Python 3.13+
 - Node.js 20+ (for PM2 process manager)
+- Microsoft Edge browser (required for Playwright browser automation)
 - Git
 
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/personal-ai-employee.git
-cd personal-ai-employee
+git clone https://github.com/ShumailaWaheed/Personal-AI-Employee-Hackathon-0.git
+cd Personal-AI-Employee-Hackathon-0
 
 # Install dependencies (local with browser automation)
 pip install -r requirements-local.txt
@@ -151,6 +158,9 @@ pm2 start ecosystem.config.js
 
 # Or run directly
 python src/main.py
+
+# Or launch the web dashboard
+cd src && streamlit run streamlit_app.py
 ```
 
 ### Deploy to Cloud (GCP)
@@ -347,6 +357,7 @@ python -m pytest tests/ --cov=src --cov-report=html
 personal-ai-employee/
 ├── src/
 │   ├── main.py                      # Entry point
+│   ├── streamlit_app.py             # Web dashboard UI
 │   ├── config/
 │   │   ├── settings.py              # Configuration loader
 │   │   └── deployment.py            # Cloud/local mode helpers
@@ -413,6 +424,13 @@ BRIEFING_SCHEDULE=monday:10:00
 
 # WhatsApp Keywords (triggers action file creation)
 WHATSAPP_TRIGGER_KEYWORDS=urgent,bhai
+
+# Dry Run (test without executing)
+DRY_RUN=false
+
+# Dashboard Auth
+DASHBOARD_USER=admin
+DASHBOARD_PASSWORD=your-password
 
 # Health Check (cloud)
 HEALTH_PORT=8080

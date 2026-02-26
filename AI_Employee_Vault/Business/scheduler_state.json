@@ -1,14 +1,14 @@
 {
   "weekly_audit": {
     "schedule": "monday:09:00",
-    "last_run": "2026-02-09T10:19:52.100780",
+    "last_run": "2026-02-23T13:51:27.728496",
     "status": "completed",
-    "next_run": "2026-02-16T09:00:00"
+    "next_run": "2026-03-02T09:00:00"
   },
   "weekly_briefing": {
     "schedule": "monday:10:00",
-    "last_run": "2026-02-09T10:19:52.122573",
+    "last_run": "2026-02-23T13:51:27.764695",
     "status": "completed",
-    "next_run": "2026-02-16T10:00:00"
+    "next_run": "2026-03-02T10:00:00"
   }
 }

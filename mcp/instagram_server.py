@@ -24,7 +24,7 @@ class InstagramMCPServer:
         self.account_id = os.getenv('INSTAGRAM_BUSINESS_ACCOUNT_ID', '')
         self.dry_run = os.getenv('DRY_RUN', 'false').lower() == 'true'
         self.api_base = 'https://graph.facebook.com/v19.0'
-        self.session_dir = os.getenv('INSTAGRAM_SESSION_DIR', './twitter_session')
+        self.session_dir = os.getenv('INSTAGRAM_SESSION_DIR', './instagram_session')
         self.headless = os.getenv('INSTAGRAM_HEADLESS', 'false').lower() == 'true'
         self._playwright = None
         self._browser = None

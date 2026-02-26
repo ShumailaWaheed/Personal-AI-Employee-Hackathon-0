@@ -63,9 +63,12 @@ def load_config() -> dict:
         'TWITTER_ACCESS_TOKEN': os.getenv('TWITTER_ACCESS_TOKEN', ''),
         'TWITTER_ACCESS_TOKEN_SECRET': os.getenv('TWITTER_ACCESS_TOKEN_SECRET', ''),
 
-        # Instagram MCP (uses Facebook Graph API)
+        # Instagram MCP (API or Playwright mode)
+        'INSTAGRAM_MODE': os.getenv('INSTAGRAM_MODE', 'api' if is_cloud else 'playwright'),
         'INSTAGRAM_ACCESS_TOKEN': os.getenv('INSTAGRAM_ACCESS_TOKEN', ''),
         'INSTAGRAM_BUSINESS_ACCOUNT_ID': os.getenv('INSTAGRAM_BUSINESS_ACCOUNT_ID', ''),
+        'INSTAGRAM_SESSION_DIR': os.getenv('INSTAGRAM_SESSION_DIR', './instagram_session'),
+        'INSTAGRAM_HEADLESS': os.getenv('INSTAGRAM_HEADLESS', 'false').lower() == 'true',
 
         # Gmail Watcher (OAuth2)
         'GOOGLE_APPLICATION_CREDENTIALS': os.getenv('GOOGLE_APPLICATION_CREDENTIALS', 'credentials.json'),

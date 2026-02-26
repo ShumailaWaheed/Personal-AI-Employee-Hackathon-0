@@ -1,0 +1,40 @@
+{
+  "servers": {
+    "email_mcp": {
+      "status": "healthy",
+      "consecutive_failures": 0,
+      "last_check": "2026-02-26T10:00:00"
+    },
+    "linkedin_mcp": {
+      "status": "healthy",
+      "consecutive_failures": 0,
+      "last_check": "2026-02-26T10:00:00"
+    },
+    "facebook_mcp": {
+      "status": "healthy",
+      "consecutive_failures": 0,
+      "last_check": "2026-02-26T10:00:00"
+    },
+    "odoo_mcp": {
+      "status": "healthy",
+      "consecutive_failures": 0,
+      "last_check": "2026-02-26T10:00:00"
+    },
+    "twitter_mcp": {
+      "status": "healthy",
+      "consecutive_failures": 0,
+      "last_check": "2026-02-26T10:00:00"
+    },
+    "instagram_mcp": {
+      "status": "healthy",
+      "consecutive_failures": 0,
+      "last_check": "2026-02-26T10:00:00"
+    },
+    "whatsapp_mcp": {
+      "status": "healthy",
+      "consecutive_failures": 0,
+      "last_check": "2026-02-26T10:00:00"
+    }
+  },
+  "last_updated": "2026-02-26T10:00:00"
+}

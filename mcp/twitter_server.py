@@ -194,11 +194,23 @@ class TwitterMCPServer:
         self._ensure_browser()
         page = self._page
 
-        # Navigate directly to compose page
-        page.goto("https://x.com/compose/post", timeout=30000, wait_until="domcontentloaded")
-        page.wait_for_timeout(3000)
+        # Navigate to home and use the main compose box
+        page.goto("https://x.com/home", timeout=30000, wait_until="domcontentloaded")
+        page.wait_for_timeout(4000)
 
-        # Type the tweet text into the compose box
+        # Dismiss any popups/overlays (upgrade, notifications, etc.)
+        for _ in range(3):
+            try:
+                close_btn = page.locator('[data-testid="xMigrationBottomBar"] button, '
+                                         '[role="dialog"] button[aria-label="Close"], '
+                                         '[data-testid="sheetDialog"] button[aria-label="Close"]').first
+                if close_btn.is_visible(timeout=2000):
+                    close_btn.click()
+                    page.wait_for_timeout(1000)
+            except Exception:
+                break
+
+        # Click the compose tweet box on home timeline
         tweet_box = page.wait_for_selector(
             '[data-testid="tweetTextarea_0"]',
             timeout=15000,
@@ -206,15 +218,40 @@ class TwitterMCPServer:
         tweet_box.click()
         page.wait_for_timeout(500)
 
-        # Use keyboard.type for reliability
+        # Type the tweet
         page.keyboard.type(text, delay=30)
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(1500)
 
-        # Use Ctrl+Enter to post (bypasses overlay click issues)
-        page.keyboard.press('Control+Enter')
-        page.wait_for_timeout(5000)
+        # Click the Post button directly
+        try:
+            post_btn = page.locator('[data-testid="tweetButtonInline"]').first
+            if not post_btn.is_visible(timeout=3000):
+                post_btn = page.locator('[data-testid="tweetButton"]').first
+            post_btn.click()
+        except Exception:
+            # Fallback to Ctrl+Enter
+            page.keyboard.press('Control+Enter')
+
+        page.wait_for_timeout(8000)
+
+        # Check if upgrade/error popup appeared
+        posted = True
+        try:
+            upgrade = page.locator('text=/upgrade/i, text=/subscribe/i, text=/premium/i').first
+            if upgrade.is_visible(timeout=3000):
+                posted = False
+                # Close the popup
+                page.keyboard.press('Escape')
+                page.wait_for_timeout(1000)
+        except Exception:
+            pass
 
         tweet_id = f"pw_{int(time.time())}"
+
+        if not posted:
+            return self._make_error(request_id, -32050,
+                "Twitter requires Premium/upgrade to post. Free accounts may be restricted.")
+
         logger.info(f"Tweet posted via Playwright (id={tweet_id})")
 
         return self._make_response(request_id, {

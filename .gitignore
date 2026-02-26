@@ -65,6 +65,7 @@ env/
 
 twitter_session/
 whatsapp_session/
+instagram_session/
 
 # Secrets & credentials
 .env.runtime
